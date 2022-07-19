@@ -138,7 +138,7 @@ void getHeight() {
     Serial.println(height);
 
     String strHeight = String(x, DEC);
-    int heightInt = strHeight.toInt();
+    int heightInt = strHeight.toInt() / 10;
 
     Serial.println(heightInt);
 
