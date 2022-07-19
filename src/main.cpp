@@ -1,59 +1,20 @@
 #include <Arduino.h>
-#include "jarvis_pinouts.h"
 #include <string.h>
 #include <stdlib.h>
-
+#include "jarvis_pinouts.h"
 #include "SoftwareSerial.h"
-
-void moveDesk(char dir);
-
-SoftwareSerial deskSerial(17);
 
 using namespace std;
 
-String arr[9];
-int pos = 0;
+SoftwareSerial  deskSerial(17);
 
-void printArray() {
-  for (int i = 0; i < 9; i++) {
-    Serial.print(arr[i] + " ");
-  }
-  Serial.println();
-}
+String          arr[9];
+int             pos= 0;
 
-//Convert from string to char array:
-char *strToChar(String str) {
-
-  char *charArray = new char[str.length() + 1];
-  str.toCharArray(charArray, str.length() + 1);
-
-  return charArray;
-}
-
-
-void getHeight() {
-    String p1 = arr[4];
-    String p2 = arr[5];
-
-    if(p2.length() == 1) {
-        p2 = "0" + p2;
-    }
-
-    String height = p1 + p2;
-
-    int x;
-    char* endptr;
-
-    x = strtol(strToChar(height), &endptr, 16);
-
-    Serial.println(height);
-
-    String strHeight = String(x, DEC);
-    int heightInt = strHeight.toInt();
-
-    Serial.println(heightInt);
-
-}
+void moveDesk(char dir);
+void printArray();
+char *strToChar(String str);
+void getHeight();
 
 void setup() {
 
@@ -151,3 +112,41 @@ void moveDesk(char dir) {
     delay(1000);
 }
 
+ char *strToChar(String str) {
+
+  char *charArray = new char[str.length() + 1];
+  str.toCharArray(charArray, str.length() + 1);
+
+  return charArray;
+}
+
+void getHeight() {
+    String p1 = arr[4];
+    String p2 = arr[5];
+
+    if(p2.length() == 1) {
+        p2 = "0" + p2;
+    }
+
+    String height = p1 + p2;
+
+    int x;
+    char* endptr;
+
+    x = strtol(strToChar(height), &endptr, 16);
+
+    Serial.println(height);
+
+    String strHeight = String(x, DEC);
+    int heightInt = strHeight.toInt();
+
+    Serial.println(heightInt);
+
+}
+
+void printArray() {
+  for (int i = 0; i < 9; i++) {
+    Serial.print(arr[i] + " ");
+  }
+  Serial.println();
+}
