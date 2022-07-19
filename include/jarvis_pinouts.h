@@ -24,12 +24,14 @@
 
 #define NC -1   // Use NC for pins that are not connected or not used
 
-int HS3 = 33;
-int DTX = 12; 
-int HTX = 14;
-int HS2 = 27;
-int HS1 = 25;
-int HS0 = 26;
+
+static constexpr int DTX = 17; //TX
+static constexpr int HTX = 16; //RX
+
+static constexpr int HS3 = 12;
+static constexpr int HS2 = 26;
+static constexpr int HS1 = 14;
+static constexpr int HS0 = 27;
 
 inline bool is_pin_connected(int pin) { return pin != NC; }
 

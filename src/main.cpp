@@ -1,38 +1,46 @@
 #include <Arduino.h>
-#include "WiFiESP.h"
 #include "jarvis_pinouts.h"
+#include <string.h>
 
-WiFiESP  wifi;
-PubSubClient client;
+#include <HardwareSerial.h>
 
 void moveDesk(char dir);
 
+HardwareSerial hsSerial(2);
+
 void setup() {
 
+    
+    hsSerial.begin(9600, SERIAL_8N1, HTX, DTX);
     Serial.begin(9600);
+
+    Serial.println("Serial Txd is on pin: "+String(HTX));
+    Serial.println("Serial Rxd is on pin: "+String(DTX));
 
     pinMode(HS0, OUTPUT);
     pinMode(HS1, OUTPUT);
     pinMode(HS2, OUTPUT);
     pinMode(HS3, OUTPUT);
-    pinMode(DTX, OUTPUT);
-    pinMode(HTX, OUTPUT);
 
+    pinMode(DTX, INPUT);
+    pinMode(HTX, INPUT);
 
-    wifi.connectWiFi();
-    wifi.setupMQTT();
-    wifi.connectmqtt();
+    digitalWrite(HS0, LOW);
+    digitalWrite(HS1, LOW);
+    digitalWrite(HS2, LOW);
+    digitalWrite(HS3, LOW);
 
-    client = wifi.client;
-    
 }
 
 
 void loop() {
-    if (!wifi.client.connected())
-        wifi.reconnect();
-    
-    wifi.client.loop();
+
+    Serial.println(hsSerial.available());
+
+    if(hsSerial.available() > 0)
+        Serial.print(hsSerial.readString());
+
+    delay(1000);
 }
 
 void moveDesk(char dir) {
