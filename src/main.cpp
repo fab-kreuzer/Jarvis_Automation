@@ -1,18 +1,65 @@
 #include <Arduino.h>
 #include "jarvis_pinouts.h"
 #include <string.h>
+#include <stdlib.h>
 
-#include <HardwareSerial.h>
+#include "SoftwareSerial.h"
 
 void moveDesk(char dir);
 
-HardwareSerial hsSerial(2);
+SoftwareSerial deskSerial(17);
+
+using namespace std;
+
+String arr[9];
+int pos = 0;
+
+void printArray() {
+  for (int i = 0; i < 9; i++) {
+    Serial.print(arr[i] + " ");
+  }
+  Serial.println();
+}
+
+//Convert from string to char array:
+char *strToChar(String str) {
+
+  char *charArray = new char[str.length() + 1];
+  str.toCharArray(charArray, str.length() + 1);
+
+  return charArray;
+}
+
+
+void getHeight() {
+    String p1 = arr[4];
+    String p2 = arr[5];
+
+    if(p2.length() == 1) {
+        p2 = "0" + p2;
+    }
+
+    String height = p1 + p2;
+
+    int x;
+    char* endptr;
+
+    x = strtol(strToChar(height), &endptr, 16);
+
+    Serial.println(height);
+
+    String strHeight = String(x, DEC);
+    int heightInt = strHeight.toInt();
+
+    Serial.println(heightInt);
+
+}
 
 void setup() {
 
     
-    hsSerial.begin(9600, SERIAL_8N1, HTX, DTX);
-    Serial.begin(9600);
+    deskSerial.begin(9600);
+    Serial.begin(115200);
 
     Serial.println("Serial Txd is on pin: "+String(HTX));
     Serial.println("Serial Rxd is on pin: "+String(DTX));
@@ -22,8 +69,8 @@ void setup() {
     pinMode(HS2, OUTPUT);
     pinMode(HS3, OUTPUT);
 
-    pinMode(DTX, INPUT);
-    pinMode(HTX, INPUT);
+    //pinMode(DTX, INPUT);
+    //pinMode(HTX, INPUT);
 
     digitalWrite(HS0, LOW);
     digitalWrite(HS1, LOW);
@@ -35,12 +82,24 @@ void setup() {
 
 void loop() {
 
-    Serial.println(hsSerial.available());
+    while(deskSerial.available()) {
 
-    if(hsSerial.available() > 0)
-        Serial.print(hsSerial.readString());
+        int val = deskSerial.read();
+        
+        String hexVal = String(val, HEX);
 
-    delay(1000);
+        arr[pos] = hexVal;
+
+        pos++;
+
+        if(val == 126) {
+            Serial.println();
+            pos = 0;
+            printArray();
+            getHeight();
+        }
+    }
+
 }
 
 void moveDesk(char dir) {
