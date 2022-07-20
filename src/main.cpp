@@ -39,7 +39,6 @@ void setup() {
     digitalWrite(HS2, LOW);
     digitalWrite(HS3, LOW);
 
-    //moveDeskToHeight(85);
 
 }
 
@@ -47,6 +46,8 @@ void setup() {
 void loop() {
 
     while(deskSerial.available()) {
+
+        //moveDeskToHeight(85);
 
         int val = deskSerial.read();
         
@@ -56,11 +57,10 @@ void loop() {
 
         pos++;
 
-        if(val == 126) {
-            Serial.println();
+        if(hexVal == "7e" || pos > 8 ) {
             pos = 0;
             printArray();
-            Serial.println(getHeight());
+            continue;
         }
     }
 
@@ -149,8 +149,6 @@ int getHeight() {
 
     x = strtol(strToChar(height), &endptr, 16);
 
-    Serial.println(height);
-
     String strHeight = String(x, DEC);
     int heightInt = strHeight.toInt() / 10;
 
@@ -158,8 +156,8 @@ int getHeight() {
 }
 
 void printArray() {
-  for (int i = 0; i < 9; i++) {
+  for (int i = 0; i < 9; i++)
     Serial.print(arr[i] + " ");
-  }
+  
   Serial.println();
 }
