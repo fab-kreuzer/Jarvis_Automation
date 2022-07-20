@@ -1,26 +1,29 @@
 #include <Arduino.h>
 #include <string.h>
 #include <stdlib.h>
+#include <PubSubClient.h>
 #include "jarvis_pinouts.h"
 #include "SoftwareSerial.h"
+#include "WiFiESP.h"
 
-using namespace std;
+SoftwareSerial controllerSerial(DTX);
+WiFiESP wifi;
+PubSubClient client;
 
-SoftwareSerial  deskSerial(17);
-
-String          arr[9] = {};
+String          command[9] = {};
 int             pos= 0;
+int             actualHeight = 0;
 
 void moveDesk(char dir);
 void printArray();
 char *strToChar(String str);
-int getHeight();
+void setHeight();
 void moveDeskToHeight(int height);
 
 void setup() {
 
     
-    deskSerial.begin(9600);
+    controllerSerial.begin(9600);
     Serial.begin(115200);
 
     Serial.println("Serial Txd is on pin: "+String(HTX));
@@ -31,46 +34,61 @@ void setup() {
     pinMode(HS2, OUTPUT);
     pinMode(HS3, OUTPUT);
 
-    //pinMode(DTX, INPUT);
-    //pinMode(HTX, INPUT);
-
     digitalWrite(HS0, LOW);
     digitalWrite(HS1, LOW);
     digitalWrite(HS2, LOW);
     digitalWrite(HS3, LOW);
 
+    wifi.connectWiFi();
+    wifi.setupMQTT();
+    wifi.connectmqtt();
+
+    client = wifi.client;
+
+    Serial.println("setup finished");
 
 }
 
 
 void loop() {
+    if (!client.connected())
+    {
+        wifi.reconnect();
+    }
 
-    while(deskSerial.available()) {
+    
+    while(controllerSerial.available()) {
 
-        //moveDeskToHeight(85);
-
-        int val = deskSerial.read();
+        int val = controllerSerial.read();
         
         String hexVal = String(val, HEX);
 
-        arr[pos] = hexVal;
+        if(hexVal.length() == 1)
+            hexVal = "0" + hexVal;
+
+        command[pos] = hexVal;
 
         pos++;
 
+        //Command finished:
         if(hexVal == "7e" || pos > 8 ) {
+
             pos = 0;
+            setHeight();
             printArray();
             continue;
         }
     }
 
+    client.loop();
+
 }
 
 void moveDeskToHeight(int height) {
 
-    if(height > getHeight()) { // goDown
+    if(height > actualHeight) { // goDown
         pinMode(HS1, HIGH);
-        while(height > getHeight()) {}
+        while(height > actualHeight) {delay(1);}
         pinMode(HS1, LOW);
             
     }
@@ -134,13 +152,9 @@ void moveDesk(char dir) {
   return charArray;
 }
 
-int getHeight() {
-    String p1 = arr[4];
-    String p2 = arr[5];
-
-    if(p2.length() == 1) {
-        p2 = "0" + p2;
-    }
+void setHeight() {
+    String p1 = command[4];
+    String p2 = command[5];
 
     String height = p1 + p2;
 
@@ -150,14 +164,17 @@ int getHeight() {
     x = strtol(strToChar(height), &endptr, 16);
 
     String strHeight = String(x, DEC);
-    int heightInt = strHeight.toInt() / 10;
-
-    return heightInt;
+    actualHeight = strHeight.toInt() / 10;
 }
 
 void printArray() {
-  for (int i = 0; i < 9; i++)
-    Serial.print(arr[i] + " ");
+  for (int i = 0; i < 9; i++) {
+
+    Serial.print(command[i] + " ");
+
+    if(command[i] == "7e")
+        break;
+  }
   
   Serial.println();
 }
