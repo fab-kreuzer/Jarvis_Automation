@@ -8,13 +8,14 @@ using namespace std;
 
 SoftwareSerial  deskSerial(17);
 
-String          arr[9];
+String          arr[9] = {};
 int             pos= 0;
 
 void moveDesk(char dir);
 void printArray();
 char *strToChar(String str);
-void getHeight();
+int getHeight();
+void moveDeskToHeight(int height);
 
 void setup() {
 
@@ -38,6 +39,8 @@ void setup() {
     digitalWrite(HS2, LOW);
     digitalWrite(HS3, LOW);
 
+    //moveDeskToHeight(85);
+
 }
 
 
@@ -57,8 +60,19 @@ void loop() {
             Serial.println();
             pos = 0;
             printArray();
-            getHeight();
+            Serial.println(getHeight());
         }
+    }
+
+}
+
+void moveDeskToHeight(int height) {
+
+    if(height > getHeight()) { // goDown
+        pinMode(HS1, HIGH);
+        while(height > getHeight()) {}
+        pinMode(HS1, LOW);
+            
     }
 
 }
@@ -120,7 +134,7 @@ void moveDesk(char dir) {
   return charArray;
 }
 
-void getHeight() {
+int getHeight() {
     String p1 = arr[4];
     String p2 = arr[5];
 
@@ -140,8 +154,7 @@ void getHeight() {
     String strHeight = String(x, DEC);
     int heightInt = strHeight.toInt() / 10;
 
-    Serial.println(heightInt);
-
+    return heightInt;
 }
 
 void printArray() {
