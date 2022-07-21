@@ -94,9 +94,9 @@ void WiFiESP::publishPayload(char* payload, char* topic) {
 }
 
 void WiFiESP::publishPayload(int payload, char* topic) {
-  char* pl;
-  sprintf(pl, "%d", payload);
-  client.publish(topic, pl);
+  string pl = to_string(payload);
+  const char* toSend = pl.c_str();
+  client.publish(topic, toSend);  
 }
 
 void WiFiESP::loop() {

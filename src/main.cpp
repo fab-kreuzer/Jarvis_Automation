@@ -7,6 +7,7 @@
 #include "WiFiESP.h"
 
 SoftwareSerial controllerSerial(DTX);
+
 WiFiESP wifi;
 PubSubClient client;
 
@@ -51,12 +52,13 @@ void setup() {
 
 
 void loop() {
-    if (!client.connected())
-    {
+
+    if (!client.connected()) {
         wifi.reconnect();
     }
 
-    
+    wifi.loop();
+
     while(controllerSerial.available()) {
 
         int val = controllerSerial.read();
@@ -76,11 +78,10 @@ void loop() {
             pos = 0;
             setHeight();
             printArray();
+            wifi.publishPayload(actualHeight, "jarvis/height");
             continue;
         }
     }
-
-    client.loop();
 
 }
 
