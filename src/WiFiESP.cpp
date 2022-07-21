@@ -32,6 +32,7 @@ void WiFiESP::connectWiFi() {
 void WiFiESP::setupMQTT() {
   client.setServer(MQTT_SER, 1883);
   client.setClient(espClient);
+  client.subscribe("jarvis/set/height");
   // set the callback function
   client.setCallback(callback);
   Serial.println("MQTT setup done");
@@ -56,7 +57,7 @@ void WiFiESP::callback(char* topic, byte* payload, unsigned int length) {
 void WiFiESP::reconnect() {
   while (!client.connected()) {
     Serial.println("Attempting MQTT connection...");
-    if (client.connect("esp42JARVIS")) {
+    if (client.connect("esp32JARVIS")) {
       Serial.println("connected");
       // Once connected, publish an announcement...
     } else {
@@ -77,7 +78,6 @@ void WiFiESP::connectmqtt() {
 
     if (!client.connected())
     {
-      Serial.println("bla");
       reconnect();
     }
   
