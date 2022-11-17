@@ -5,23 +5,52 @@
 #include "jarvis_pinouts.h"
 #include "SoftwareSerial.h"
 #include "WiFiESP.h"
+#include "local_config.h"
+#include <string> 
+
+using namespace std;
 
 SoftwareSerial controllerSerial(DTX);
 
-WiFiESP wifi;
-PubSubClient client;
+EspMQTTClient client(
+  WIFI_SSID,
+  WIFI_PASS,
+  MQTT_SER,  // MQTT Broker server ip
+  "ESP32_JARVIS"     // Client name that uniquely identify your device
+);
 
 String          command[9] = {};
 int             pos= 0;
 int             actualHeight = 0;
 
+String param1 = "";
+String param2 = "";
+String calcHeight = "";
+TaskHandle_t Core0TaskHandle;
+TaskHandle_t Core1TaskHandle;
+
 void printArray();
 char *strToChar(String str);
 void setHeight();
 void moveDeskToHeight(int height);
+const char* intToChar(int num);
+void CoreTask1(void * parameter);
+
+void onConnectionEstablished()
+{
+  // Subscribe to "mytopic/test" and display received message to Serial
+  client.subscribe("jarvis/set/height", [](const String & payload) {
+    Serial.println(payload);
+  });
+}
 
 void setup() {
 
+    
+    client.enableDebuggingMessages(); 
+    client.enableHTTPWebUpdater(); 
+    client.enableOTA(); 
+    client.enableLastWillMessage("Jarvis/lastwill", "I am going offline");
     
     controllerSerial.begin(9600);
     Serial.begin(115200);
@@ -39,49 +68,48 @@ void setup() {
     digitalWrite(HS2, LOW);
     digitalWrite(HS3, LOW);
 
-    wifi.connectWiFi();
-    wifi.setupMQTT();
-    wifi.connectmqtt();
 
-    client = wifi.client;
+    xTaskCreatePinnedToCore(CoreTask1, "CPU_1", 4096, NULL, 1, &Core1TaskHandle, 1);
 
     Serial.println("setup finished");
 
 }
 
-
 void loop() {
+    client.loop();
+}
 
-    if (!client.connected()) {
-        wifi.reconnect();
-    }
+void CoreTask1(void * parameter) {
+    String hexVal = "";
+    for(;;) {
 
-    wifi.loop();
+        while(controllerSerial.available()) {
 
-    while(controllerSerial.available()) {
-
-        int val = controllerSerial.read();
-        
-        String hexVal = String(val, HEX);
-
-        if(hexVal.length() == 1)
-            hexVal = "0" + hexVal;
-
-        command[pos] = hexVal;
-
-        pos++;
-
-        //Command finished:
-        if(hexVal == "7e" || pos > 8 ) {
+            int val = controllerSerial.read();
             
-            pos = 0;
-            setHeight();
-            printArray();
-            wifi.publishPayload(actualHeight, "jarvis/height");
-            continue;
-        }
-    }
+             hexVal = String(val, HEX);
 
+            if(hexVal.length() == 1)
+                hexVal = "0" + hexVal;
+
+            command[pos] = hexVal;
+
+            pos++;
+
+            //Command finished:
+            if(hexVal == "7e" || pos > 8 ) {
+
+                pos = 0;
+                setHeight();
+                printArray();
+                //client.publish("jarvis/get/height", intToChar(actualHeight));
+                continue;
+            }
+        }
+            
+        delay (500);
+    }
+    
 }
 
 void moveDeskToHeight(int height) {
@@ -104,15 +132,15 @@ void moveDeskToHeight(int height) {
 }
 
 void setHeight() {
-    String p1 = command[4];
-    String p2 = command[5];
+    param1 = command[4];
+    param2 = command[5];
 
-    String height = p1 + p2;
+    calcHeight= param1 + param2;
 
     int x;
     char* endptr;
 
-    x = strtol(strToChar(height), &endptr, 16);
+    x = strtol(strToChar(calcHeight), &endptr, 16);
 
     String strHeight = String(x, DEC);
     actualHeight = strHeight.toInt() / 10;
@@ -128,4 +156,10 @@ void printArray() {
   }
   
   Serial.println();
+}
+
+const char* intToChar(int num) {
+    std::string s = std::to_string(num);
+    char const *pchar = s.c_str();
+    return pchar;
 }
