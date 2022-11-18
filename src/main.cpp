@@ -10,39 +10,46 @@
 
 using namespace std;
 
-SoftwareSerial controllerSerial(DTX);
+/************************************************/
 
-EspMQTTClient client(
-  WIFI_SSID,
-  WIFI_PASS,
-  MQTT_SER,  // MQTT Broker server ip
-  "ESP32_JARVIS"     // Client name that uniquely identify your device
-);
+EspMQTTClient client( WIFI_SSID, WIFI_PASS, MQTT_SER, "ESP32_JARVIS" );
 
-String          command[9] = {};
-int             pos= 0;
-int             actualHeight = 0;
+/************************************************/
 
-String param1 = "";
-String param2 = "";
-String calcHeight = "";
-TaskHandle_t Core0TaskHandle;
-TaskHandle_t Core1TaskHandle;
+String          command[9]      = {};
+int             pos             = 0;
+int             actualHeight    = 0;
 
-void printArray();
-char *strToChar(String str);
-void setHeight();
-void moveDeskToHeight(int height);
+String          param1          = "";
+String          param2          = "";
+String          calcHeight      = "";
+String          strHeight       = "";
+String          lastHeight      = "";
+String          toHeight        = "";
+TaskHandle_t    Core0TaskHandle;
+TaskHandle_t    Core1TaskHandle;
+SoftwareSerial  controllerSerial(DTX);
+
+/************************************************/
+void        printArray();
+char*       strToChar(String str);
+void        setHeight();
+void        moveDeskToHeight(void * parameter);
 const char* intToChar(int num);
-void CoreTask1(void * parameter);
+void        CoreTask1(void * parameter);
+
+/************************************************/
 
 void onConnectionEstablished()
 {
-  // Subscribe to "mytopic/test" and display received message to Serial
   client.subscribe("jarvis/set/height", [](const String & payload) {
-    Serial.println(payload);
+    toHeight = payload;
+    Serial.println("created");
+    xTaskCreatePinnedToCore(moveDeskToHeight, "CPU_0", 4096, NULL, 1, &Core0TaskHandle, 0);
   });
 }
+
+/************************************************/
 
 void setup() {
 
@@ -75,9 +82,13 @@ void setup() {
 
 }
 
+/************************************************/
+
 void loop() {
     client.loop();
 }
+
+/************************************************/
 
 void CoreTask1(void * parameter) {
     String hexVal = "";
@@ -96,40 +107,70 @@ void CoreTask1(void * parameter) {
 
             pos++;
 
-            //Command finished:
             if(hexVal == "7e" || pos > 8 ) {
 
                 pos = 0;
                 setHeight();
-                printArray();
-                //client.publish("jarvis/get/height", intToChar(actualHeight));
+
+                if (lastHeight != strHeight) {
+                    printArray();
+                    client.publish("jarvis/get/height", strHeight);
+                    lastHeight = strHeight;
+                }
                 continue;
             }
         }
             
-        delay (500);
-    }
-    
-}
-
-void moveDeskToHeight(int height) {
-
-    if(height > actualHeight) { // goDown
-        pinMode(HS1, HIGH);
-        while(height > actualHeight) {delay(1);}
-        pinMode(HS1, LOW);
-            
+        delay (100);
     }
 
 }
 
- char *strToChar(String str) {
+/************************************************/
+
+void moveDeskToHeight(void * parameter) {
+
+    int h = atoi(toHeight.c_str());
+
+    Serial.print(h);
+
+    if(h < actualHeight) { // goDown
+
+        digitalWrite(HS0, HIGH);
+
+        while(h < actualHeight) {
+            delay(10);
+        }
+
+        digitalWrite(HS0, LOW);   
+
+    }else if (h > actualHeight) { //goUp
+        digitalWrite(HS1, HIGH);
+
+        while(h > actualHeight) {
+            delay(100);
+        }
+
+        digitalWrite(HS1, LOW);   
+    } else {
+
+        Serial.println("no move");
+    }
+
+    vTaskDelete(Core0TaskHandle);
+}
+
+/************************************************/
+
+char *strToChar(String str) {
 
   char *charArray = new char[str.length() + 1];
   str.toCharArray(charArray, str.length() + 1);
 
   return charArray;
 }
+
+/************************************************/
 
 void setHeight() {
     param1 = command[4];
@@ -142,9 +183,11 @@ void setHeight() {
 
     x = strtol(strToChar(calcHeight), &endptr, 16);
 
-    String strHeight = String(x, DEC);
-    actualHeight = strHeight.toInt() / 10;
+    actualHeight = x / 10;
+    strHeight = String(actualHeight, DEC);
 }
+
+/************************************************/
 
 void printArray() {
   for (int i = 0; i < 9; i++) {
@@ -157,6 +200,8 @@ void printArray() {
   
   Serial.println();
 }
+
+/************************************************/
 
 const char* intToChar(int num) {
     std::string s = std::to_string(num);
