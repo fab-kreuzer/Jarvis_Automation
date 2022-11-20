@@ -134,6 +134,44 @@ void moveDeskToHeight(void * parameter) {
 
     Serial.print(h);
 
+    if (h <= 10) {
+
+        switch (h) {
+            case 1:
+                digitalWrite(HS0, HIGH);
+                digitalWrite(HS1, HIGH);
+                delay(100);
+                digitalWrite(HS1, LOW);
+                digitalWrite(HS0, LOW);
+            break;
+            case 2:
+                digitalWrite(HS2, HIGH);
+                delay(100);
+                digitalWrite(HS2, LOW);
+            break;
+            case 3:
+                digitalWrite(HS0, HIGH);
+                digitalWrite(HS2, HIGH);
+                delay(100);
+                digitalWrite(HS2, LOW);
+                digitalWrite(HS0, LOW);
+            break;
+            case 4:
+                digitalWrite(HS2, HIGH);
+                digitalWrite(HS1, HIGH);
+                delay(100);
+                digitalWrite(HS1, LOW);
+                digitalWrite(HS2, LOW);
+            break;
+            case 5:
+
+            break;
+        }
+
+        vTaskDelete(Core0TaskHandle);
+    }
+
+    // Move desk to specific Height:
     if(h < actualHeight) { // goDown
 
         digitalWrite(HS0, HIGH);
