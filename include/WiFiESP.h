@@ -5,31 +5,15 @@
 #include <PubSubClient.h>
 #include <vector>
 
-#ifdef ESP8266
+#include <WiFiClient.h>
+#include <WebServer.h>
+#include <ESPmDNS.h>
+#include "ESP32HTTPUpdateServer.h"
 
-  #include <ESP8266WiFi.h>
-  #include <ESP8266WebServer.h>
-  #include <ESP8266mDNS.h>
-  #include <ESP8266HTTPUpdateServer.h>
+#define DEFAULT_MQTT_CLIENT_NAME "ESP32"
+#define ESPHTTPUpdateServer ESP32HTTPUpdateServer
 
-  #define DEFAULT_MQTT_CLIENT_NAME "ESP8266"
-  #define ESPHTTPUpdateServer ESP8266HTTPUpdateServer
-  #define ESPmDNS ESP8266mDNS
-  #define WebServer ESP8266WebServer
-
-#else // for ESP32
-
-  #include <WiFiClient.h>
-  #include <WebServer.h>
-  #include <ESPmDNS.h>
-  #include "ESP32HTTPUpdateServer.h"
-
-  #define DEFAULT_MQTT_CLIENT_NAME "ESP32"
-  #define ESPHTTPUpdateServer ESP32HTTPUpdateServer
-
-#endif
-
-void onConnectionEstablished(); // MUST be implemented in your sketch. Called once everythings is connected (Wifi, mqtt).
+void onConnectionEstablished();
 
 typedef std::function<void()> ConnectionEstablishedCallback;
 typedef std::function<void(const String &message)> MessageReceivedCallback;
